@@ -1,121 +1,80 @@
-import  tkinter
-from tkinter import messagebox
+import tkinter
 import  random
-import pyperclip
-import  json
+import pandas
+# ---------------------------- CONSTANTS ------------------------------- #
+NAME_OF_GAME = "Flash Cards"
+BACKGROUND_COLOR = "#B1DDC6"
+CANVAS_WIDTH = 800
+CANVAS_LENGTH = 526
+LANGUAGE_FROM = "French"
+LANGUAGE_TO = "English"
+TIME_DELAY_BEFORE_SHOWING_ANSWER = 5000
+PATH_TO_FRONT_IMAGE = "images/card_front.png"
+PATH_TO_BACK_IMAGE = "images/card_back.png"
+PATH_TO_ORIGINAL_DATA_TO_LEARN =  "data/french_words.csv"
+PATH_TO_REMAINING_DATA_TO_LEARN = "data/words_to_learn.csv"
+FONT_1 = ("Ariel", 40, "italic")
+FONT_2 = ("Ariel", 60, "bold")
+PATH_TO_GREEN_BUTTON_IMAGE = "images/right.png"
+PATH_TO_RED_BUTTON_IMAGE = "images/wrong.png"
+# ---------------------------- VARIABLES ------------------------------- #
+current_card = {}
+data_to_learn = {}
+# ---------------------------- READ DATA ------------------------------- #
+try:
+    remaining_data_to_learn = pandas.read_csv(PATH_TO_REMAINING_DATA_TO_LEARN)
+except FileNotFoundError:
+    original_data_to_learn = pandas.read_csv(PATH_TO_ORIGINAL_DATA_TO_LEARN)
+    data_to_learn = original_data_to_learn.to_dict(orient="records")
+else:
+    data_to_learn = remaining_data_to_learn.to_dict(orient="records")
 
-FONT_NAME = "Courier"
-EMAIL = ""
-password = ""
+# ---------------------------- GENERATE NEXT CARD  ------------------------------- #
+def next_card_generator():
+    global flip_timer, current_card
+    window.after_cancel(flip_timer)
+    current_card = random.choice(data_to_learn)
+    canvas.itemconfig(image_of_card, image=front_image)
+    canvas.itemconfig(title_of_card, text=LANGUAGE_FROM, fill="black")
+    canvas.itemconfig(card_content, text=current_card[LANGUAGE_FROM], fill="black")
+    flip_timer = window.after(TIME_DELAY_BEFORE_SHOWING_ANSWER, func=flip_the_card)
 
-# ---------------------------- PASSWORD GENERATOR ------------------------------- #
-def password_generator():
-    global password
-    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
-               'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-               'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-    numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    symbols = ['!', '#', '$', '%', '&', '(', ')', '*', '+']
-    password_list = []
-    [password_list.append(random.choice(letters)) for letter in range(0, random.randint(8, 10))]
-    [password_list.append(random.choice(symbols)) for symbol in range(0, random.randint(2, 4))]
-    [password_list.append(random.choice(numbers)) for number in range(0, random.randint(2, 4))]
-    random.shuffle(password_list)
-    password = "".join(password_list)
-    entry_password.insert(0, string=password)
-    # pyperclip.copy(password)
+# ---------------------------- Flip the cards  ------------------------------- #
+def flip_the_card():
+    canvas.itemconfig(image_of_card, image=back_image),
+    canvas.itemconfig(title_of_card, text=LANGUAGE_TO, fill="white"),
+    canvas.itemconfig(card_content, text=current_card[LANGUAGE_TO], fill="white")
 
-# ---------------------------- SAVE PASSWORD ------------------------------- #
-def save_data():
-    # get the information from entries     # and save it to the file
-    website = entry_website.get()
-    output_password = entry_password.get()
-    email_username = entry_email_username.get()
-    new_data = {website:
-                    {"email": email_username,
-                     "password": output_password,
-                     }
-                }
-    if website == "" or output_password == "" or email_username == "":
-        messagebox.showwarning("Warning", message="Please fill out all required fields!")
-    else:
-        try: # with keyword "try" we are checking a possibility of appearing FileNotFoundError
-            with open("data.json", "r") as data_file:
-                #reading existing json data file
-                data = json.load(data_file)
-        except FileNotFoundError: #in case there is no json file creating a new json file and write down  the content from new_data variable
-            with open("data.json", "w") as data_file:
-                json.dump(new_data, data_file, indent=4)
-        else: #in case there was no FileNotFoundError
-            # updating old data with a new_data
-            data.update(new_data)
-            with open("data.json", "w") as data_file:
-                #saving updated data to data.json file
-                json.dump(data, data_file, indent=4)
-        finally:
-            #delete the current info
-            entry_website.delete(0, tkinter.END)
-            entry_password.delete(0, tkinter.END)
-            entry_email_username.delete(0, tkinter.END)
-
-def find_password():
-    try:
-        with open("data.json", "r") as data_file:
-            data = json.load(data_file)
-            search_website = entry_website.get()
-    except FileNotFoundError:
-        messagebox.showwarning(title="Error", message= "The file with saved passwords does not exit")
-    else:
-        try:
-            email_saved = data[search_website]["email"]
-            password_saved = data[search_website]["password"]
-            messagebox.showinfo(title=f"{search_website}", message=f"Email: {email_saved}\n" f"Password: {password_saved}")
-        except KeyError:
-            messagebox.showinfo(title=f"{search_website}", message="No details for the website exists")
-
-def copy_password():
-    pyperclip.copy(password)
+# ---------------------------- REMOVE KNOWN CARDS FROM DICTIONARY ------------------------------- #
+def remove_known_data():
+    global remaining_data_to_learn
+    data_to_learn.remove(current_card)
+    remaining_data_to_learn = pandas.DataFrame(data_to_learn)
+    remaining_data_to_learn.to_csv(PATH_TO_REMAINING_DATA_TO_LEARN, index=False)
+    next_card_generator()
 
 # ---------------------------- UI SETUP ------------------------------- #
 window = tkinter.Tk()
-window.title("Password Manager")
-window.config(padx=50, pady=50)
+window.title(NAME_OF_GAME)
+window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
+flip_timer = window.after(TIME_DELAY_BEFORE_SHOWING_ANSWER, func=flip_the_card)
 
-canvas = tkinter.Canvas(width=200, height=200)
-password_app_image = tkinter.PhotoImage(file="logo.png")
-canvas.create_image(100, 100, image=password_app_image)
-canvas.grid(column=1, row=0)
+canvas = tkinter.Canvas(width=CANVAS_WIDTH, height=CANVAS_LENGTH, bg=BACKGROUND_COLOR, highlightthickness=0)
+front_image = tkinter.PhotoImage(file=PATH_TO_FRONT_IMAGE)
+back_image = tkinter.PhotoImage(file=PATH_TO_BACK_IMAGE)
+image_of_card = canvas.create_image((CANVAS_WIDTH / 2), (CANVAS_LENGTH / 2), image=front_image)
+title_of_card = canvas.create_text((CANVAS_WIDTH / 2), (CANVAS_LENGTH / 4), text="", fill="black", font=FONT_1)
+card_content = canvas.create_text((CANVAS_WIDTH / 2), (CANVAS_LENGTH / 2), text="", fill="black", font=FONT_2)
+canvas.grid(column=0, row=0, columnspan=2)
 
-label_website = tkinter.Label(text="Website:", font=(FONT_NAME, 16, "bold"))
-label_website.grid(column=0, row=1, sticky="W")
+image_green = tkinter.PhotoImage(file=PATH_TO_GREEN_BUTTON_IMAGE)
+button_green = tkinter.Button(image=image_green, highlightthickness=0, command=remove_known_data)
+button_green.grid(column=1, row=1)
 
-label_email_username = tkinter.Label(text="Email/Username:", font=(FONT_NAME, 16, "bold"))
-label_email_username.grid(column=0, row=2, sticky="W")
+image_red = tkinter.PhotoImage(file=PATH_TO_RED_BUTTON_IMAGE)
+button_red = tkinter.Button(image=image_red, highlightthickness=0, command=next_card_generator)
+button_red.grid(column=0, row=1)
 
-label_password = tkinter.Label(text="Password:", font=(FONT_NAME, 16, "bold"))
-label_password.grid(column=0, row=3, sticky="W")
-
-entry_website = tkinter.Entry(width=21)
-entry_website.focus()
-entry_website.grid(column=1, row=1)
-
-entry_email_username = tkinter.Entry(width=36)
-entry_email_username.insert(0, string=EMAIL)
-entry_email_username.grid(column=1, row=2, columnspan=2)
-
-entry_password = tkinter.Entry(width=17)
-entry_password.grid(column=1, row=3, sticky="W")
-
-button_add = tkinter.Button(text="Add", command=save_data, highlightthickness=0, width=34)
-button_add.grid(column=1, row=4, columnspan=2)
-
-button_generate_password = tkinter.Button(text="Generate Password", command=password_generator, width=11)
-button_generate_password.grid(column=2, row=3, sticky="W")
-
-button_search = tkinter.Button(text="Search", command=find_password, highlightthickness=0, width=11)
-button_search.grid(column=2, row=1)
-
-button_copy_password = tkinter.Button(text="📋", command=copy_password, highlightthickness=0, width=1)
-button_copy_password.grid(column=1, row=3, sticky="E")
+next_card_generator()
 
 window.mainloop()
