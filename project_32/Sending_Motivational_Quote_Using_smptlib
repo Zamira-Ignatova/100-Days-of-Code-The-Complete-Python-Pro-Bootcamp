@@ -1,0 +1,28 @@
+import datetime
+import random
+import smtplib
+
+FROM_EMAIL_ADDRESS = "sender_email"
+PASSWORD = "password"
+TO_EMAIL_ADDRESS = "recepient_email"
+SERVER_ADRESS = "server_addrees"
+PORT = 465
+
+list_of_quotes = []
+
+current_datetime = datetime.datetime.now()
+current_day_of_a_week = current_datetime.weekday()
+
+if current_day_of_a_week == 4:
+    with open("quotes.txt", mode="r") as file_quotes:
+        quotes = file_quotes.readlines()
+        for quote in quotes:
+            quote = quote.strip()
+            quote.splitlines()
+            list_of_quotes.append(quote)
+    with smtplib.SMTP_SSL(SERVER_ADRESS, PORT) as connection:
+        connection.login(user=FROM_EMAIL_ADDRESS, password=PASSWORD)
+        connection.sendmail(
+            from_addr=FROM_EMAIL_ADDRESS,
+            to_addrs=TO_EMAIL_ADDRESS,
+            msg=f"Subject: Motivational Quote For Today\n{random.choice(list_of_quotes)}")
