@@ -1,0 +1,37 @@
+import smtplib
+import os
+import requests
+
+#constants
+API_KEY = os.environ.get("OWM_API_KEY")
+API_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
+LATITUDE = 41.385063
+LONGITUDE = 2.173404
+CNT = 4
+FROM_EMAIL_ADDRESS = "sender_email"
+PASSWORD = "password"
+TO_EMAIL_ADDRESS = "recepient_email"
+
+parameters = {"lat": LATITUDE,
+              "lon": LONGITUDE,
+              "appid": API_KEY,
+              "cnt": CNT,
+              }
+list_of_weather_code = []
+
+response = requests.get(url=API_ENDPOINT, params=parameters)
+response.raise_for_status()
+data = response.json()
+
+for item in range (0, CNT):
+    weather_code = data['list'][item]["weather"][0]['id']
+    list_of_weather_code.append(weather_code)
+for code in list_of_weather_code:
+    if code < 700:
+        with smtplib.SMTP_SSL("smtp.mail.ru", 465) as connection:
+            connection.login(user=FROM_EMAIL_ADDRESS, password=PASSWORD)
+            connection.sendmail(
+                from_addr=FROM_EMAIL_ADDRESS,
+                to_addrs=TO_EMAIL_ADDRESS,
+                msg=f"Subject: It is going to rain today. Do not forget to take an umbrella!")
+        break
