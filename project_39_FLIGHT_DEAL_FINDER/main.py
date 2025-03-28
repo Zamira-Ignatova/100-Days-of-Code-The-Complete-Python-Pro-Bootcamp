@@ -39,10 +39,11 @@ for destination in sheet_data:
         flights = flight_search.get_flights(departure_iata_code=DEPARTURE_AIRPORT_IATA, arrival_iata_code=destination["iataCode"],
                                   departure_date=tomorrow, return_date=one_week_after_tomorrow)
         cheapest_flight = get_cheapest_flights(flights)
-        notification_manager.send_email(to_email_address=TO_EMAIL_ADDRESS,
-                                        message=f"PRICE ALERT!\n"
-                                                f"There is a cheapest flight from the {cheapest_flight.departure_iata_code}"
-                                                f" to the {cheapest_flight.arrival_iata_code} for ${cheapest_flight.price}\n"
-                                                f" the departure is on {cheapest_flight.departure_date}, "
-                                                f" the return day is on {cheapest_flight.return_date}.")
+        if cheapest_flight.price != "N/A" and cheapest_flight.price < destination["lowestPrice"]:
+            notification_manager.send_email(to_email_address=TO_EMAIL_ADDRESS,
+                                            message=f"PRICE ALERT!\n"
+                                                    f"There is a cheapest flight from the {cheapest_flight.departure_iata_code}"
+                                                    f" to the {cheapest_flight.arrival_iata_code} for ${cheapest_flight.price}\n"
+                                                    f" the departure is on {cheapest_flight.departure_date}, "
+                                                    f" the return day is on {cheapest_flight.return_date}.")
 
