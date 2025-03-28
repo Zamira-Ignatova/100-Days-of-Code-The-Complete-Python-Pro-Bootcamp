@@ -8,11 +8,13 @@ class NotificationManager:
         """This class is responsible for sending notifications with the deal flight details"""
         self._password = os.environ["EMAIL_PASSWORD"]
         self._from_email_address = os.environ["EMAIL_ADDRESS"]
+        self._smtp_host = os.environ["SMTP_SERVER_ADDRESS"]
+        self._smtp_port = int(os.environ["SMTP_PORT"])
 
-    def send_email(self, to_email_address, message):
-        with smtplib.SMTP_SSL("smtp.mail.ru", 465) as connection:
+
+    def send_email(self, email_list, message_body):
+        with smtplib.SMTP_SSL(self._smtp_host, self._smtp_port) as connection:
             connection.login(user=self._from_email_address, password=self._password)
-            connection.sendmail(
-                from_addr=self._from_email_address,
-                to_addrs=to_email_address,
-                msg=f"{message}")
+            for email_address in email_list:
+                connection.sendmail(from_addr=self._from_email_address, to_addrs=email_address,
+                    msg=f"Subject:PRICE ALERT!🚨\n{message_body}".encode('utf-8'))
